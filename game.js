@@ -591,7 +591,7 @@ class SkyBox {
     }
 }
 
-export class JumpGame extends Scene {
+export class Game extends Scene {
     constructor() {
 
         super();

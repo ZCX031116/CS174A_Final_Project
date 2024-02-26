@@ -1,0 +1,34 @@
+Project title: OneLeap
+Member: Cixuan Zhang, Mingqi Sui, Xiaohan Song
+
+Theme:
+● This a jumping game setting in the forrest. The player is jumping on randomly placed tree stumps (front/right/left with straight angle).
+
+Interactivity:
+● Press and hold “j” to jump, jump distance proportional to duration of key press
+● Goal is to jump on as many blocks as possible
+● If the player misses a platform, the avatar will fall; game over.
+● Game is over and restarts when you don’t land on a block, after 5 seconds\
+● Press "r" to restart the game immediately
+● The path is generated dynamically.
+● Score board on top of the screen display successful jumps completed
+
+Course Topics:
+● Shading and Lighting of the objects in the scene
+● Collision detection: whether avatar touched the platform edge without landing on it
+● Physics simulation: animating projectile motion of the jumping avatar
+● Normal Texture Mapping/Bump Mapping for trees and surroundings
+● Tree stump use randomly selected texture to increase aesthetics
+● Camera follows the avatar smoothly
+
+Advanced Features:
+● Collision detection
+● Score board
+● Animation of avatar preparing to jump
+● Implemented skybox for background
+
+Other Features:
+● Randomly placed trees/background to increase interactivity
+● Smooth transition of camera from stump to stump
+● Zig-zagging of jump course in the X and Z axis
+● Optimizations made for playability of game
