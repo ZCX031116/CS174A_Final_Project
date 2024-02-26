@@ -127,11 +127,11 @@ class Player {
         this.pos = pos;
         this.vel = vec3(0,0,0);
         this.shape = new Shape_From_File("../assets/tinker.obj")
-        let texture = new Texture("../assets/straw.jpg");
-        this.material = new Material(new defs.Textured_Phong(),
-        {ambient: 0.5, diffusivity: .8, specularity: 1, texture: texture});
-        // this.material = new Material(new defs.Phong_Shader(),
-        //     {ambient: 1, diffusivity: .4, color: hex_color("#A52A2A")});
+        // let texture = new Texture("../assets/straw.jpg");
+        // this.material = new Material(new defs.Textured_Phong(),
+        // {ambient: 0.5, diffusivity: .8, specularity: 1, texture: texture});
+        this.material = new Material(new defs.Phong_Shader(),
+            {ambient: 1, diffusivity: .4, color: hex_color("#A52A2A")});
         this.falling = false;
         this.time=0;
         this.squish = 1;
@@ -543,7 +543,7 @@ class Floor{
     // 
         // Non bump mapped:
         this.floor = new Material(new defs.Textured_Phong(), {
-            texture:texture_t, color: hex_color("#11FF00"), 
+            texture:texture_t, color: hex_color("#8B4513"), 
             ambient: 0.5, diffusivity: 0.8, specularity: 1,
             });
     }
@@ -551,24 +551,31 @@ class Floor{
     draw(context, program_state, t, color, shading, offset) {
         let transform = Mat4.identity();// Mat4.scale(20,0,20);
         transform.pre_multiply(Mat4.rotation(Math.PI/2, 1, 0, 0));
-        transform.pre_multiply(Mat4.scale(8,0,8));
+        transform.pre_multiply(Mat4.scale(3,0,3));
         transform.pre_multiply(Mat4.translation(...this.pos));
         transform.pre_multiply(Mat4.translation(...offset));
         this.shapes.floor.draw(context, program_state, transform, this.floor);
         //set to true after player jumps off this block
     }
 }
-
 class SkyBox {
     constructor(center, size, side_color, bottom_color) {
         this.center = center;
         this.size = size;
         this.side_color = side_color;
-        this.bottom_color = bottom_color;
+        this.bottom_color = bottom_color; // 注意：这个属性可能不再需要，因为我们会直接使用贴图
 
         this.plate = new defs.Square();
+
+        // 侧面使用单一颜色的材质
         this.material = new Material(new defs.Phong_Shader(), {
-            color: hex_color("#11FF00"), ambient: 1, diffusivity: 0, specularity: 0
+            color: hex_color("#8B4513"), ambient: 1, diffusivity: 0, specularity: 0
+        });
+
+        // 底部使用贴图的材质
+        this.bottom_material = new Material(new defs.Textured_Phong(), {
+            texture: new Texture("../assets/grass.png"),
+            ambient: 1, diffusivity: 0, specularity: 0
         });
     }
     
@@ -579,7 +586,11 @@ class SkyBox {
                         Mat4.translation(0,-this.size,0).times(
                         Mat4.rotation(Math.PI/2, 1, 0, 0).times(
                         Mat4.scale(this.size, this.size, 1))));
-        this.plate.draw(context, program_state, transform, this.material.override({color: this.bottom_color}));
+        
+        // 绘制底部时使用带有贴图的材质
+        this.plate.draw(context, program_state, transform, this.bottom_material);
+
+        // 为了绘制四个侧面，将变换矩阵旋转并应用侧面的材质
         transform = translate.times(Mat4.rotation(-Math.PI/2, 1, 0, 0).times(invtranslate.times(transform)));
         for (let i = 0; i<4; i++) {
             this.plate.draw(context, program_state, transform, this.material.override({color:this.side_color}));
@@ -591,6 +602,7 @@ class SkyBox {
         this.center = center;
     }
 }
+
 
 export class JumpGame extends Scene {
     constructor() {
@@ -844,6 +856,10 @@ export class JumpGame extends Scene {
 
         this.key_triggered_button("Jump(distance proportional to duration of key press", ["j"], () => {this.player.jump(false)},
             '#6E6460', () => this.player.jump(true));
+        
+        this.key_triggered_button("Restart Game", ["R"], () => {
+            this.init_game(); 
+        });
     }
 
     display(context, program_state) {
