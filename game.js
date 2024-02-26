@@ -906,9 +906,9 @@ export class JumpGame extends Scene {
             }
         }
 
-        for (let i = 0; i < this.tree_backgrounds.length; i++){
-            this.tree_backgrounds[i].draw(context, program_state, t, this.colors[i], shading, tree_pos);
-        }
+        // for (let i = 0; i < this.tree_backgrounds.length; i++){
+        //     this.tree_backgrounds[i].draw(context, program_state, t, this.colors[i], shading, tree_pos);
+        // }
         this.floor.draw(context, program_state, t, 0, shading, this.offset);
         this.skybox.draw(context, program_state);
 
@@ -928,32 +928,32 @@ export class JumpGame extends Scene {
             return;
         }
 
-        for (let i = 0; i < this.tree_backgrounds.length; i++){
-            if (isObjectWithinFrustum(this.tree_backgrounds[i], frustumPlanes)) {
-                this.tree_backgrounds[i].draw(context, program_state, t, this.colors[i], shading, tree_pos);
-            } else{
-                let class_of = this.tree_backgrounds[i].identify();
-                if(class_of == 0){
-                    let node = delete_from_arr(this.tree_backgrounds,i);
-                    add_to_arr(this.prepared_trees,node);
-                }
-                else if(class_of == 1){
-                    let node = delete_from_arr(this.tree_backgrounds,i);
-                    add_to_arr(this.prepared_trunks,node);
-                }
-                else if(class_of == 2){
-                    let node = delete_from_arr(this.tree_backgrounds,i);
-                    add_to_arr(this.prepared_stumps,node);
-                }
-                else if(class_of == 3){
-                    let node = delete_from_arr(this.tree_backgrounds,i);
-                    add_to_arr(this.prepared_leaves,node);
-                } else{
-                    let node = delete_from_arr(this.tree_backgrounds,i);
-                    add_to_arr(this.prepared_stones,node);
-                }
-            }
-        }
+        // for (let i = 0; i < this.tree_backgrounds.length; i++){
+        //     if (isObjectWithinFrustum(this.tree_backgrounds[i], frustumPlanes)) {
+        //         this.tree_backgrounds[i].draw(context, program_state, t, this.colors[i], shading, tree_pos);
+        //     } else{
+        //         let class_of = this.tree_backgrounds[i].identify();
+        //         if(class_of == 0){
+        //             let node = delete_from_arr(this.tree_backgrounds,i);
+        //             add_to_arr(this.prepared_trees,node);
+        //         }
+        //         else if(class_of == 1){
+        //             let node = delete_from_arr(this.tree_backgrounds,i);
+        //             add_to_arr(this.prepared_trunks,node);
+        //         }
+        //         else if(class_of == 2){
+        //             let node = delete_from_arr(this.tree_backgrounds,i);
+        //             add_to_arr(this.prepared_stumps,node);
+        //         }
+        //         else if(class_of == 3){
+        //             let node = delete_from_arr(this.tree_backgrounds,i);
+        //             add_to_arr(this.prepared_leaves,node);
+        //         } else{
+        //             let node = delete_from_arr(this.tree_backgrounds,i);
+        //             add_to_arr(this.prepared_stones,node);
+        //         }
+        //     }
+        // }
         this.floor.draw(context, program_state, t, 0, shading, this.offset);
 
         this.player.update();
