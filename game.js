@@ -16,6 +16,7 @@ let attempts=0;
 
 function calculateFrustumPlanes(viewMatrix, projectionMatrix) {
     let vpMatrix = projectionMatrix.times(viewMatrix);
+    console.log(vpMatrix);
     let planes = {
         left:   {},
         right:  {},
@@ -79,6 +80,7 @@ function calculateFrustumPlanes(viewMatrix, projectionMatrix) {
 
     return planes;
 }
+
 function normalizePlane(plane) {
     let length = Math.sqrt(plane.x * plane.x + plane.y * plane.y + plane.z * plane.z);
     plane.x /= length;
@@ -94,10 +96,6 @@ function isObjectWithinFrustum(object, frustumPlanes) {
 
     // Check if the sphere is outside any of the frustum planes
     for (let plane in frustumPlanes) {
-        // console.log("hhhhhhhhhhhh");
-        // console.log(plane);
-        // console.log("eeeeeeeeeeeee");
-        // console.log(frustumPlanes[plane]);
         let planeNormal = { x: frustumPlanes[plane].x, y: frustumPlanes[plane].y, z: frustumPlanes[plane].z };
         let distance = dotProduct(planeNormal, center) + frustumPlanes[plane].w;
         if (distance < -radius) {
@@ -128,16 +126,19 @@ class Player {
     constructor(pos) {
         this.pos = pos;
         this.vel = vec3(0,0,0);
-        this.shape = new Shape_From_File("../assets/objects/light.obj")
-        this.material = new Material(new defs.Phong_Shader(),
-            {ambient: 1, diffusivity: .4, color: hex_color("#ffff11")});
+        this.shape = new Shape_From_File("../assets/tinker.obj")
+        let texture = new Texture("../assets/straw.jpg");
+        this.material = new Material(new defs.Textured_Phong(),
+        {ambient: 0.5, diffusivity: .8, specularity: 1, texture: texture});
+        // this.material = new Material(new defs.Phong_Shader(),
+        //     {ambient: 1, diffusivity: .4, color: hex_color("#A52A2A")});
         this.falling = false;
         this.time=0;
         this.squish = 1;
     }
 
     draw(context, program_state) {
-        let player_transform = Mat4.translation(0,1,0).times(Mat4.translation(...this.pos)).times(Mat4.rotation(3*Math.PI/2,1,0,0));
+        let player_transform = Mat4.translation(0,2,0).times(Mat4.translation(...this.pos)).times(Mat4.rotation(3*Math.PI/2,1,0,0));
         player_transform.pre_multiply(Mat4.scale(1,this.squish,1));
         this.shape.draw(context, program_state, player_transform, this.material);
     }
