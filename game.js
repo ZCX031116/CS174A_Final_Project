@@ -603,7 +603,6 @@ class SkyBox {
     }
 }
 
-
 export class Game extends Scene {
     constructor() {
 
