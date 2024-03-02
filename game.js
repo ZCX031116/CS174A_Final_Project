@@ -16,6 +16,7 @@ let attempts=0;
 
 function calculateFrustumPlanes(viewMatrix, projectionMatrix) {
     let vpMatrix = projectionMatrix.times(viewMatrix);
+    console.log(vpMatrix);
     let planes = {
         left:   {},
         right:  {},
@@ -79,6 +80,7 @@ function calculateFrustumPlanes(viewMatrix, projectionMatrix) {
 
     return planes;
 }
+
 function normalizePlane(plane) {
     let length = Math.sqrt(plane.x * plane.x + plane.y * plane.y + plane.z * plane.z);
     plane.x /= length;
@@ -94,10 +96,6 @@ function isObjectWithinFrustum(object, frustumPlanes) {
 
     // Check if the sphere is outside any of the frustum planes
     for (let plane in frustumPlanes) {
-        // console.log("hhhhhhhhhhhh");
-        // console.log(plane);
-        // console.log("eeeeeeeeeeeee");
-        // console.log(frustumPlanes[plane]);
         let planeNormal = { x: frustumPlanes[plane].x, y: frustumPlanes[plane].y, z: frustumPlanes[plane].z };
         let distance = dotProduct(planeNormal, center) + frustumPlanes[plane].w;
         if (distance < -radius) {
@@ -128,16 +126,19 @@ class Player {
     constructor(pos) {
         this.pos = pos;
         this.vel = vec3(0,0,0);
-        this.shape = new Shape_From_File("../assets/objects/light.obj")
+        this.shape = new Shape_From_File("../assets/tinker.obj")
+        // let texture = new Texture("../assets/straw.jpg");
+        // this.material = new Material(new defs.Textured_Phong(),
+        // {ambient: 0.5, diffusivity: .8, specularity: 1, texture: texture});
         this.material = new Material(new defs.Phong_Shader(),
-            {ambient: 1, diffusivity: .4, color: hex_color("#ffff11")});
+            {ambient: 1, diffusivity: .4, color: hex_color("#A52A2A")});
         this.falling = false;
         this.time=0;
         this.squish = 1;
     }
 
     draw(context, program_state) {
-        let player_transform = Mat4.translation(0,1,0).times(Mat4.translation(...this.pos)).times(Mat4.rotation(3*Math.PI/2,1,0,0));
+        let player_transform = Mat4.translation(0,2,0).times(Mat4.translation(...this.pos)).times(Mat4.rotation(3*Math.PI/2,1,0,0));
         player_transform.pre_multiply(Mat4.scale(1,this.squish,1));
         this.shape.draw(context, program_state, player_transform, this.material);
     }
@@ -542,7 +543,7 @@ class Floor{
     // 
         // Non bump mapped:
         this.floor = new Material(new defs.Textured_Phong(), {
-            texture:texture_t, color: hex_color("#11FF00"), 
+            texture:texture_t, color: hex_color("#8B4513"), 
             ambient: 0.5, diffusivity: 0.8, specularity: 1,
             });
     }
@@ -550,24 +551,31 @@ class Floor{
     draw(context, program_state, t, color, shading, offset) {
         let transform = Mat4.identity();// Mat4.scale(20,0,20);
         transform.pre_multiply(Mat4.rotation(Math.PI/2, 1, 0, 0));
-        transform.pre_multiply(Mat4.scale(8,0,8));
+        transform.pre_multiply(Mat4.scale(3,0,3));
         transform.pre_multiply(Mat4.translation(...this.pos));
         transform.pre_multiply(Mat4.translation(...offset));
         this.shapes.floor.draw(context, program_state, transform, this.floor);
         //set to true after player jumps off this block
     }
 }
-
 class SkyBox {
     constructor(center, size, side_color, bottom_color) {
         this.center = center;
         this.size = size;
         this.side_color = side_color;
-        this.bottom_color = bottom_color;
+        this.bottom_color = bottom_color; // 注意：这个属性可能不再需要，因为我们会直接使用贴图
 
         this.plate = new defs.Square();
+
+        // 侧面使用单一颜色的材质
         this.material = new Material(new defs.Phong_Shader(), {
-            color: hex_color("#11FF00"), ambient: 1, diffusivity: 0, specularity: 0
+            color: hex_color("#8B4513"), ambient: 1, diffusivity: 0, specularity: 0
+        });
+
+        // 底部使用贴图的材质
+        this.bottom_material = new Material(new defs.Textured_Phong(), {
+            texture: new Texture("../assets/grass.png"),
+            ambient: 1, diffusivity: 0, specularity: 0
         });
     }
     
@@ -578,7 +586,11 @@ class SkyBox {
                         Mat4.translation(0,-this.size,0).times(
                         Mat4.rotation(Math.PI/2, 1, 0, 0).times(
                         Mat4.scale(this.size, this.size, 1))));
-        this.plate.draw(context, program_state, transform, this.material.override({color: this.bottom_color}));
+        
+        // 绘制底部时使用带有贴图的材质
+        this.plate.draw(context, program_state, transform, this.bottom_material);
+
+        // 为了绘制四个侧面，将变换矩阵旋转并应用侧面的材质
         transform = translate.times(Mat4.rotation(-Math.PI/2, 1, 0, 0).times(invtranslate.times(transform)));
         for (let i = 0; i<4; i++) {
             this.plate.draw(context, program_state, transform, this.material.override({color:this.side_color}));
@@ -843,6 +855,10 @@ export class Game extends Scene {
 
         this.key_triggered_button("Jump(distance proportional to duration of key press", ["j"], () => {this.player.jump(false)},
             '#6E6460', () => this.player.jump(true));
+        
+        this.key_triggered_button("Restart Game", ["R"], () => {
+            this.init_game(); 
+        });
     }
 
     display(context, program_state) {
@@ -889,9 +905,9 @@ export class Game extends Scene {
             }
         }
 
-        for (let i = 0; i < this.tree_backgrounds.length; i++){
-            this.tree_backgrounds[i].draw(context, program_state, t, this.colors[i], shading, tree_pos);
-        }
+        // for (let i = 0; i < this.tree_backgrounds.length; i++){
+        //     this.tree_backgrounds[i].draw(context, program_state, t, this.colors[i], shading, tree_pos);
+        // }
         this.floor.draw(context, program_state, t, 0, shading, this.offset);
         this.skybox.draw(context, program_state);
 
@@ -911,32 +927,32 @@ export class Game extends Scene {
             return;
         }
 
-        for (let i = 0; i < this.tree_backgrounds.length; i++){
-            if (isObjectWithinFrustum(this.tree_backgrounds[i], frustumPlanes)) {
-                this.tree_backgrounds[i].draw(context, program_state, t, this.colors[i], shading, tree_pos);
-            } else{
-                let class_of = this.tree_backgrounds[i].identify();
-                if(class_of == 0){
-                    let node = delete_from_arr(this.tree_backgrounds,i);
-                    add_to_arr(this.prepared_trees,node);
-                }
-                else if(class_of == 1){
-                    let node = delete_from_arr(this.tree_backgrounds,i);
-                    add_to_arr(this.prepared_trunks,node);
-                }
-                else if(class_of == 2){
-                    let node = delete_from_arr(this.tree_backgrounds,i);
-                    add_to_arr(this.prepared_stumps,node);
-                }
-                else if(class_of == 3){
-                    let node = delete_from_arr(this.tree_backgrounds,i);
-                    add_to_arr(this.prepared_leaves,node);
-                } else{
-                    let node = delete_from_arr(this.tree_backgrounds,i);
-                    add_to_arr(this.prepared_stones,node);
-                }
-            }
-        }
+        // for (let i = 0; i < this.tree_backgrounds.length; i++){
+        //     if (isObjectWithinFrustum(this.tree_backgrounds[i], frustumPlanes)) {
+        //         this.tree_backgrounds[i].draw(context, program_state, t, this.colors[i], shading, tree_pos);
+        //     } else{
+        //         let class_of = this.tree_backgrounds[i].identify();
+        //         if(class_of == 0){
+        //             let node = delete_from_arr(this.tree_backgrounds,i);
+        //             add_to_arr(this.prepared_trees,node);
+        //         }
+        //         else if(class_of == 1){
+        //             let node = delete_from_arr(this.tree_backgrounds,i);
+        //             add_to_arr(this.prepared_trunks,node);
+        //         }
+        //         else if(class_of == 2){
+        //             let node = delete_from_arr(this.tree_backgrounds,i);
+        //             add_to_arr(this.prepared_stumps,node);
+        //         }
+        //         else if(class_of == 3){
+        //             let node = delete_from_arr(this.tree_backgrounds,i);
+        //             add_to_arr(this.prepared_leaves,node);
+        //         } else{
+        //             let node = delete_from_arr(this.tree_backgrounds,i);
+        //             add_to_arr(this.prepared_stones,node);
+        //         }
+        //     }
+        // }
         this.floor.draw(context, program_state, t, 0, shading, this.offset);
 
         this.player.update();
