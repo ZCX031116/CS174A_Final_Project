@@ -8,6 +8,7 @@ const {
 let debug = 0;
 let factor = 1.5;
 let direction = 0;
+let move_dir = 0 ;
 let tree_pos = vec3(0,0,0);
 let TIMESTEP = 0;
 const GRAVITY_VECTOR = vec3(0,1,0);
@@ -16,7 +17,7 @@ let attempts=0;
 
 function calculateFrustumPlanes(viewMatrix, projectionMatrix) {
     let vpMatrix = projectionMatrix.times(viewMatrix);
-    console.log(vpMatrix);
+    // console.log(vpMatrix);
     let planes = {
         left:   {},
         right:  {},
@@ -144,59 +145,49 @@ class Player {
     }
 
     // v is the vector to direct the jump
-    jump(done) {
+    jump(done,dir) {
         if (this.falling) return;
         this.time++;
         this.squish = Math.max(0.5, this.squish - (1-0.5)/20);
-        console.log(this.time);
         if(!done) return;
-
-        if (this.time <= 5){
-            this.time = 10;
-            // return;
+        // Adjust jump time for responsiveness
+        if (this.time <= 5) this.time = 10;
+        else if (this.time > 5 && this.time <= 15) this.time = 13;
+        else if (this.time > 15 && this.time <= 25) this.time = 20;
+        else if (this.time > 25 && this.time <= 35) this.time = 30;
+        else if (this.time > 35) this.time = 40;
+    
+        // Adjust velocity based on direction
+        if (dir == 0) {
+            // Jump forward
+            this.vel = this.vel.plus(vec3(Math.min(5, 1.15 * this.time / 15), Math.min(7, 2 * this.time / 15), 0));
+            move_dir = 0;
+        } else if (dir == 1) {
+            // Jump left
+            this.vel = this.vel.plus(vec3(0, Math.min(5, 2 * this.time / 15), -1 * Math.min(7, 1.15 * this.time / 15)));
+            move_dir = 1;
+        } else if (dir == 2) {
+            // Jump right - assuming similar mechanics but in the opposite direction of 'left'
+            this.vel = this.vel.plus(vec3(0, Math.min(5, 2 * this.time / 15), Math.min(7, 1.15 * this.time / 15)));
+            move_dir = 2;
         }
-
-        if (this.time > 5 && this.time <= 15){
-            this.time = 13;
-            // return;
-        }
-
-        if (this.time > 15 && this.time <= 25){
-            this.time = 20;
-        }
-
-        if (this.time > 25 && this.time <= 35){
-            this.time = 30;
-        }
-
-        if (this.time > 35){
-            this.time = 40;
-        }
-
-        // this.vel = this.vel.plus(vec3(Math.min(2,1.15*this.time/15),Math.min(3,2*this.time/15),0));
-        // this.vel = this.vel.plus(vec3(Math.min(2,1.15*22/15),Math.min(3,2*22/15),0));
-        if (direction == 0){
-                this.vel = this.vel.plus(vec3(Math.min(5,1.15*this.time/15),Math.min(7,2*this.time/15),0));
-            // this.vel = this.vel.plus(vec3(1.15*13/15,2*13/15,0));
-            if(debug){
-                this.vel = this.vel.plus(vec3(1.9,2.5,0));        
-            }
-
-        }else{
-            this.vel = this.vel.plus(vec3(0,Math.min(5,2*this.time/15), -1*Math.min(7,1.15*this.time/15)));
-            // this.vel = this.vel.plus(vec3(0,2*13/15,-1.15*13/15));
-            if(debug){
-                this.vel = this.vel.plus(vec3(0,2.5,-1.9));
+    
+        // Debugging adjustments
+        if (debug) {
+            if (direction == 0) {
+                this.vel = this.vel.plus(vec3(1.9, 2.5, 0));
+            } else {
+                // Assuming debug effects for new direction are similar to existing ones
+                this.vel = this.vel.plus(vec3(0, 2.5, direction == 1 ? -1.9 : 1.9));
             }
         }
-
-        console.log(this.vel);
-        this.time=0;
-        this.squish=1;
+    
+        this.time = 0;
+        this.squish = 1;
         this.falling = true;
         this.ifStarted = true;
     }
-
+    
     // Updates position and velocity if currently falling
     update() {
         if (!this.falling) return;
@@ -339,21 +330,6 @@ class Tree {
         tree_transform.pre_multiply(Mat4.translation(...this.pos));
         //let tree_transform = Mat4.scale(this.radius,this.height,this.radius).times(Mat4.translation(0,0.5,0).times(Mat4.translation(...this.pos).times(Mat4.rotation(Math.PI/2,1,0,0))));
         this.shape.draw(context, program_state, tree_transform, this.platform);
-        
-        // if(this.disappear==false){
-        //     // if(Math.floor(t)%2==0)
-        //     if (this.active){
-        //         this.shape.draw(context, program_state, tree_transform, this.material_gouraud); //.override({color:color}));
-        //     }else{
-        //         this.shape.draw(context, program_state, tree_transform, this.material_gouraud.override({ambient:0.0})); //.override({color:color})
-        //     }
-        //     // else{
-        //     //     if (shading)
-        //     //         this.shape.draw(context, program_state, tree_transform, this.material_phong_shading.override({color:color}));
-        //     //     else
-        //     //         this.shape.draw(context, program_state, tree_transform, this.material_phong.override({color:color}));
-        //     // }
-        // }
     }
 }
 
@@ -803,68 +779,61 @@ export class Game extends Scene {
         //this function called when player finally jumps(releases key)
 
         //also create a new block
-
-        let length = 10;
-
-        if(Math.random() > 2/3){
-            length = 20;
-        }else {
-            if(Math.random() > 1/3){
-                length = 10;
-            }else{
-                length = 5;
-            }
-        }
-        if (Math.random() > 0.5){
-            this.trees[this.trees.length]=(new Tree(vec3(this.lastX+length,0, this.lastZ),1.5,1));
-            this.plant_tree_background(length,this.lastX,this.lastZ,0);
-            this.lastX+=length;
-            direction = 0;
-        }
-        else{
-            this.trees[this.trees.length]=(new Tree(vec3(this.lastX,0,this.lastZ-length),1.5,1));
-            this.plant_tree_background(length,this.lastX,this.lastZ,1);
-            this.lastZ-=length;
-            direction = 1;
-        }
-        //disappear all the trees before the new one you land on
-        // set the blocks it has jumped after to disappear
-        // let count = 1;
-        // for (let tree of this.tree_backgrounds) {
-        //     if (tree.pos[0] + tree.radius < this.player.pos[0]) {
-        //         tree_pos = vec3(this.lastX-Math.random()*5,0, this.lastZ-Math.random()*5);
-        //     }
-        //     if (tree.pos[2] + tree.radius < this.player.pos[2]) {
-        //         tree_pos = vec3(this.lastX-Math.random()*5,0, this.lastZ-Math.random()*5);
-        //     }
-        // }
-
+        let lengthOptions = [6,8,10,12,14];
+        let length1 = lengthOptions[Math.floor(Math.random() * lengthOptions.length)];
+        let length2 = lengthOptions[Math.floor(Math.random() * lengthOptions.length)];
+        let length3 = lengthOptions[Math.floor(Math.random() * lengthOptions.length)];
+        // Decide the new positions for the next trees based on the jump length.
+        let forwardPos = vec3(this.player.pos[0] + length1, 0, this.player.pos[2]);
+        let leftPos = vec3(this.player.pos[0], 0, this.player.pos[2] - length2);
+        let rightPos = vec3(this.player.pos[0], 0, this.player.pos[2] + length3);
+    
+        // Create new trees at the calculated positions.
+        let newTrees = [
+            new Tree(forwardPos, 1.5, 1), // Forward
+            new Tree(leftPos, 1.5, 1),    // Left
+            new Tree(rightPos, 1.5, 1)    // Right
+        ];
+    
+        // Add the current tree that the player is on to the new trees list.
         for (let tree of this.trees) {
-            if (tree.pos[0] == this.player.pos[0] && tree.pos[2] == this.player.pos[2] ) {
-                tree.active=true;
-            }else{
-                tree.active=false;
+            if (tree.pos[0] === this.player.pos[0] && tree.pos[2] === this.player.pos[2]) {
+                newTrees.unshift(tree); // Add the current tree to the beginning of the array.
+                break;
             }
         }
+    
+        // Replace the existing trees with the new set of trees.
+        this.trees = newTrees;
+    
+        // Update the background for each new tree.
+        this.plant_tree_background(length, this.player.pos[0], this.player.pos[2], 0); // Forward
+        this.plant_tree_background(length, this.player.pos[0], this.player.pos[2], 1); // Left
+        this.plant_tree_background(length, this.player.pos[0], this.player.pos[2], 2); // Right
     }
 
     make_control_panel() {
         // Draw the scene's buttons, setup their actions and keyboard shortcuts, and monitor live measurements.
         this.key_triggered_button("Welcome to JumpGame. Your objective is to make you avatar jump to blocks", ["i"], () => {});
-
-
-        this.key_triggered_button("Jump(distance proportional to duration of key press", ["j"], () => {this.player.jump(false)},
-            '#6E6460', () => this.player.jump(true));
+        // this.key_triggered_button("Jump(distance proportional to duration of key press", ["j"], () => {this.player.jump(false)},
+        //     '#6E6460', () => this.player.jump(true));
         
-        this.key_triggered_button("Restart Game", ["R"], () => {
+        // Add jump logic for W, A, S, D keys
+        this.key_triggered_button("Jump Forward", ["7"], () => {this.player.jump(false,0)},
+        '#6E6460', () => this.player.jump(true,0));
+
+        this.key_triggered_button("Jump Left", ["8"], () => {this.player.jump(false,1)},
+        '#6E6460', () => this.player.jump(true,1));
+
+        this.key_triggered_button("Jump Right", ["9"], () => {this.player.jump(false,2)},
+        '#6E6460', () => this.player.jump(true,2));
+        
+        this.key_triggered_button("Restart Game", ["q"], () => {
             this.init_game(); 
         });
     }
 
     display(context, program_state) {
-
-
-
         // display():  Called once per frame of animation.
         // Setup -- This part sets up the scene's overall camera matrix, projection matrix, and lights:
         if (!context.scratchpad.controls) {
@@ -874,11 +843,10 @@ export class Game extends Scene {
         }
 
         program_state.projection_transform = Mat4.perspective(
-            Math.PI / 4, context.width / context.height, .1, 1000);
+            Math.PI / 3, context.width / context.height, .1, 1000);
 
         const t = program_state.animation_time / 1000, dt = program_state.animation_delta_time / 1000;
         TIMESTEP = program_state.animation_delta_time / 100;
-
         // let light_position = vec4(this.offset[0], this.offset[1], this.offset[2], 1);
         // let light_position = Mat4.rotation(t / 300, 1, 0, 0).times(vec4(-1, -1, -1, 1));
 
@@ -927,32 +895,6 @@ export class Game extends Scene {
             return;
         }
 
-        // for (let i = 0; i < this.tree_backgrounds.length; i++){
-        //     if (isObjectWithinFrustum(this.tree_backgrounds[i], frustumPlanes)) {
-        //         this.tree_backgrounds[i].draw(context, program_state, t, this.colors[i], shading, tree_pos);
-        //     } else{
-        //         let class_of = this.tree_backgrounds[i].identify();
-        //         if(class_of == 0){
-        //             let node = delete_from_arr(this.tree_backgrounds,i);
-        //             add_to_arr(this.prepared_trees,node);
-        //         }
-        //         else if(class_of == 1){
-        //             let node = delete_from_arr(this.tree_backgrounds,i);
-        //             add_to_arr(this.prepared_trunks,node);
-        //         }
-        //         else if(class_of == 2){
-        //             let node = delete_from_arr(this.tree_backgrounds,i);
-        //             add_to_arr(this.prepared_stumps,node);
-        //         }
-        //         else if(class_of == 3){
-        //             let node = delete_from_arr(this.tree_backgrounds,i);
-        //             add_to_arr(this.prepared_leaves,node);
-        //         } else{
-        //             let node = delete_from_arr(this.tree_backgrounds,i);
-        //             add_to_arr(this.prepared_stones,node);
-        //         }
-        //     }
-        // }
         this.floor.draw(context, program_state, t, 0, shading, this.offset);
 
         this.player.update();
@@ -967,7 +909,7 @@ export class Game extends Scene {
             let tree_ref = null;
             for (let tree of this.trees) {
                 //make game easier by not looking at center of mass of block but just the edges
-                if (direction == 0){
+                if (move_dir == 0){
                     if (tree.pos[0] - 1 <= this.player.pos[0] && tree.pos[0] + 1 >= this.player.pos[0]) {
                         this.onBlock = true;
                         block_x = tree.pos[0]
@@ -1163,3 +1105,31 @@ class Gouraud_Shader extends Shader {
         this.send_gpu_state(context, gpu_addresses, gpu_state, model_transform);
     }
 }
+
+
+        // for (let i = 0; i < this.tree_backgrounds.length; i++){
+        //     if (isObjectWithinFrustum(this.tree_backgrounds[i], frustumPlanes)) {
+        //         this.tree_backgrounds[i].draw(context, program_state, t, this.colors[i], shading, tree_pos);
+        //     } else{
+        //         let class_of = this.tree_backgrounds[i].identify();
+        //         if(class_of == 0){
+        //             let node = delete_from_arr(this.tree_backgrounds,i);
+        //             add_to_arr(this.prepared_trees,node);
+        //         }
+        //         else if(class_of == 1){
+        //             let node = delete_from_arr(this.tree_backgrounds,i);
+        //             add_to_arr(this.prepared_trunks,node);
+        //         }
+        //         else if(class_of == 2){
+        //             let node = delete_from_arr(this.tree_backgrounds,i);
+        //             add_to_arr(this.prepared_stumps,node);
+        //         }
+        //         else if(class_of == 3){
+        //             let node = delete_from_arr(this.tree_backgrounds,i);
+        //             add_to_arr(this.prepared_leaves,node);
+        //         } else{
+        //             let node = delete_from_arr(this.tree_backgrounds,i);
+        //             add_to_arr(this.prepared_stones,node);
+        //         }
+        //     }
+        // }
