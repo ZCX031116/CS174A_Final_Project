@@ -205,7 +205,19 @@ class Player {
     }
 }
 
+class Bomb {
+    constructor(pos) {
+        this.pos = pos;
+        this.shape = new Shape_From_File("../assets/objects/light.obj")
+        this.material = new Material(new defs.Phong_Shader(),
+            {ambient: 1, diffusivity: .4, color: hex_color("#333333")}); // Darker color
+    }
 
+    draw(context, program_state) {
+        let bomb_transform =  Mat4.translation(0,10,0).times(Mat4.translation(...this.pos)).times(Mat4.rotation(Math.PI/2,1,0,0)).times(Mat4.scale(0.8,0.8,0.8));
+        this.shape.draw(context, program_state, bomb_transform, this.material);
+    }
+}
 // class ReferenceLine{
 //     constructor(pos, radius, height) {
 //         this.pos = pos;
@@ -642,7 +654,9 @@ export class Game extends Scene {
         // Game initialization
         this.player = new Player(vec3(0,3,0));
         // this.trees = [new Tree(vec3(0,0,0),1,1), new Tree(vec3(5,0,0),1.5,1), new Tree(vec3(10,0,0),1.5,1), new Tree(vec3(15,0,0),1.5,1), new Tree(vec3(20,0,0),1,2)];
-
+        
+        this.bomb = new Bomb(vec3(0,3,0));
+        
         this.trees = [new Tree(vec3(0,2,0),1,1), new Tree(vec3(this.lastX,2,0),1.5,1)];
         this.tree_backgrounds = [];
 
@@ -872,12 +886,14 @@ export class Game extends Scene {
                 this.trees[i].draw(context, program_state, t, this.colors[i], shading, tree_pos);
             }
         }
+        this.bomb.draw(context, program_state);
 
         // for (let i = 0; i < this.tree_backgrounds.length; i++){
         //     this.tree_backgrounds[i].draw(context, program_state, t, this.colors[i], shading, tree_pos);
         // }
         this.floor.draw(context, program_state, t, 0, shading, this.offset);
         this.skybox.draw(context, program_state);
+        
 
         if(this.gameOver) {
             this.player.draw(context, program_state);
