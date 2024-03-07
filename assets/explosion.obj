@@ -1,0 +1,17 @@
+# Simple explosion placeholder model
+
+o Explosion
+
+# Vertices
+v 0.0 0.0 0.0
+v 1.0 0.0 0.0
+v -1.0 0.0 0.0
+v 0.0 1.0 0.0
+v 0.0 -1.0 0.0
+v 0.0 0.0 1.0
+v 0.0 0.0 -1.0
+
+# Faces
+f 1 2 3
+f 1 4 5
+f 1 6 7

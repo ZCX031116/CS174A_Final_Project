@@ -136,6 +136,9 @@ class Player {
         this.falling = false;
         this.time=0;
         this.squish = 1;
+        this.model_transform = Mat4.identity();
+        this.inRotation = false;
+        this.fly_velocity = vec3(-1.5,3,2);
     }
 
     draw(context, program_state) {
@@ -207,6 +210,37 @@ class Player {
         this.pos[0] = block_x;
         this.vel = vec3(0,0,0);
     }
+
+    fly(context, program_state) {
+        // 确保有一个初始的模型变换矩阵
+        if (!this.model_transform)
+            this.model_transform = Mat4.identity();
+        
+        this.flying = true;
+        const camera_position = program_state.camera_inverse.times(vec4(0, 0, 0, 1)).to3();
+        const direction_to_camera = camera_position.minus(this.pos).normalized();
+        
+        // 假设玩家被炸飞时朝向天空，我们可以使用一个固定的旋转轴，例如Z轴或自定义轴
+        const rotation_axis = vec3(0, 0, 1); // 这里使用Z轴作为示例，可以根据需要调整
+    
+        // 动画函数更新玩家的位置和旋转
+        const animate = () => {
+            if (!this.flying || program_state.animation_time >= this.fly_end_time) {
+                this.flying = false;
+                return;
+            }
+            
+            this.pos = this.pos.plus(this.fly_velocity.times(TIMESTEP));
+            // 以下两行新增旋转效果
+            const angle_per_frame = this.fly_rotation_speed * TIMESTEP;
+            this.model_transform = this.model_transform.times(Mat4.rotation(angle_per_frame, ...rotation_axis));
+    
+            // 如果需要，更新draw方法中的模型变换以反映当前的model_transform
+            requestAnimationFrame(animate);
+        };
+        animate();
+    }
+       
 }
 
 class Bomb {
@@ -214,7 +248,7 @@ class Bomb {
         this.fall_speed = Math.random() * 0.9 + 0.70; // falling speed per second per unit distance 0.7 ~ 2
         this.regenerate_speed = Math.random() * 5 + 2; // time delay in second to create a new bomb
         this.pos = pos;
-        this.pos[1] = 3;
+        this.pos[1] = 10;
         this.is_shown = true;
         this.is_alive = 1;
         this.regenerate_time = 0;
@@ -293,6 +327,30 @@ class Bomb {
         let bomb_transform =  Mat4.translation(0,10,0).times(Mat4.translation(...this.pos)).times(Mat4.rotation(Math.PI/2,1,0,0)).times(Mat4.scale(0.8,0.8,0.8));
         this.shape.draw(context, program_state, bomb_transform, this.material);
 
+    }
+}
+
+class Explosion{
+    constructor(pos){
+        this.pos = pos; // 爆炸的位置
+        this.shape = new Shape_From_File("../assets/tinker.obj"); // 载入爆炸模型
+        this.material = new Material(new defs.Phong_Shader(), {ambient: 1, diffusivity: 0.4, color: hex_color("#FFA500")});
+        this.alive = true; // 标记爆炸是否还应该被绘制
+        this.duration = 1000; // 爆炸持续时间，例如1000毫秒
+        this.startTime = Date.now();
+    }
+
+    draw(context, program_state) {
+        if (!this.alive) return; // 如果爆炸已经结束，不再绘制
+        let now = Date.now();
+        if (now - this.startTime > this.duration) {
+            this.alive = false; // 超过持续时间，标记为不活跃
+            return;
+        }
+
+        // 绘制爆炸效果
+        let model_transform = Mat4.translation(...this.pos);
+        this.shape.draw(context, program_state, model_transform, this.material);
     }
 }
 
@@ -734,6 +792,8 @@ export class Game extends Scene {
         this.light=new Light(vec4(5,5,5,0), color(1, 1, 1, 0.1), 100);
         this.init_game();
 
+        this.explosions = [];
+
     }
 
     init_game(){
@@ -762,7 +822,7 @@ export class Game extends Scene {
         this.trees = [new Tree(vec3(0,2,0),1,1), new Tree(vec3(this.lastX,2,0),1.5,1), new Tree(vec3(-this.lastX,2,0),1.5,1), new Tree(vec3(0,2,7),1.5,1), new Tree(vec3(0,2,-7),1.5,1)];
         this.tree_backgrounds = [];
 
-        this.bomb = [ new Bomb(vec3(this.lastX,2,0)), new Bomb(vec3(-this.lastX,2,0)), new Bomb(vec3(0,2,7)), new Bomb(vec3(0,2,-7))] ;
+        this.bomb = [ new Bomb(vec3(this.lastX,5,0)), new Bomb(vec3(-this.lastX,5,0)), new Bomb(vec3(0,5,7)), new Bomb(vec3(0,5,-7))] ;
 
         this.plant_tree_background(this.lastX,this.trees[0].pos[0],this.trees[0].pos[2],0);
 
@@ -942,10 +1002,10 @@ export class Game extends Scene {
 
         for (let i = 0; i < this.trees.length; i++) {
 
-            if(this.trees[i].pos[0] === this.player.pos[0] && this.trees[i].pos[2] === this.player.pos[2])
-            {
-                continue;
-            }
+            // if(this.trees[i].pos[0] === this.player.pos[0] && this.trees[i].pos[2] === this.player.pos[2])
+            // {
+            //     continue;
+            // }
 
             let is_found = -1;
             for(let j = 0; j < this.bomb.length; j++)
@@ -965,7 +1025,7 @@ export class Game extends Scene {
                 }
             }else {
 
-                console.log('is_found', is_found, 'i', i, this.trees[i].pos)
+                //console.log('is_found', is_found, 'i', i, this.trees[i].pos)
 
                 let ready_index = -1;
                 for (let j = 0; j < this.bomb.length; j++) {
@@ -988,6 +1048,7 @@ export class Game extends Scene {
 
 
         this.bomb.forEach((f)=>{f.draw(context, program_state)});
+        
     }
 
     make_control_panel() {
@@ -1012,6 +1073,44 @@ export class Game extends Scene {
         this.key_triggered_button("Restart Game", ["q"], () => {
             this.init_game();
         });
+    }
+
+    bombExplosion(number){
+        //TODO: the bomb explodes and not alive
+        if (number < 0 || number >= this.bomb.length){
+            console.error("Invalid bomb number");
+            return;
+        }
+        if (!this.bomb[number]){
+            console.error("Bomb at index" + number + " does not exist.");
+            return;
+        }
+        console.log("Here we explode!");
+        let bomb = this.bomb[number];
+        if (bomb.is_alive != 1) return;
+        // bomb.is_alive = 3;
+        // bomb.shape = new Shape_From_File("./assets/objects/explosion.obj");
+        // bomb.material = new Material(new defs.Phong_Shader(), {ambient: 1, diffusivity: 0.4, color: hex_color("#FFA500")});
+        // //bomb.draw(context, program_state);
+        // bomb.is_alive = 0;
+        let explosion = new Explosion(vec3(...bomb.pos));
+        this.explosions.push(explosion);
+        console.log("We reached here");
+    }
+
+    checkBombCollision(){
+        for (let i = 0; i < this.bomb.length; i++)
+        {
+            if (this.bomb[i].is_alive !== 1) continue; // skip this bomb if not alive
+            let distance = this.player.pos.minus(this.bomb[i].pos).norm();
+            if (this.bomb[i].pos[0] == this.player.pos[0] && this.bomb[i].pos[2] == this.player.pos[2]){console.log("index: " + i + ", distance: " + distance);}
+            
+            if (distance < 3) {
+                console.log("collided by bomb " + i);
+                return i;
+            }
+        }
+        return -1;
     }
 
     display(context, program_state) {
@@ -1056,7 +1155,10 @@ export class Game extends Scene {
 
         this.update_bomb(context, program_state);
 
-
+        for(let explosion of this.explosions){
+            explosion.draw(context, program_state);
+        }
+        this.explosions = this.explosions.filter(explosion => explosion.alive);
 
         // for (let i = 0; i < this.tree_backgrounds.length; i++){
         //     this.tree_backgrounds[i].draw(context, program_state, t, this.colors[i], shading, tree_pos);
@@ -1126,6 +1228,14 @@ export class Game extends Scene {
                 // new_initial_camera_location = Mat4.look_at(vec3(0+this.player.pos[0], 10+this.player.pos[1], 20), vec3(0, 0, 0), vec3(0, 1, 0));
                 //generate new blocks and erase old blocks
             }
+        }
+
+        let collide = this.checkBombCollision();
+        if (collide !== -1){
+            this.bombExplosion(collide);
+            this.player.inRotation = true;
+            this.player.fly(context, program_state);
+            this.gameOver = true;
         }
         //reset game if this happens
         if(this.player.pos[1]<=0){
