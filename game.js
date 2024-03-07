@@ -26,7 +26,7 @@ function calculateFrustumPlanes(viewMatrix, projectionMatrix) {
         near:   {},
         far:    {}
     };
-    planes.left = { 
+    planes.left = {
         x: vpMatrix[3][0] + vpMatrix[0][0],
         y: vpMatrix[3][1] + vpMatrix[0][1],
         z: vpMatrix[3][2] + vpMatrix[0][2],
@@ -34,7 +34,7 @@ function calculateFrustumPlanes(viewMatrix, projectionMatrix) {
     };
     normalizePlane(planes.left);
 
-    planes.right = { 
+    planes.right = {
         x: vpMatrix[3][0] - vpMatrix[0][0],
         y: vpMatrix[3][1] - vpMatrix[0][1],
         z: vpMatrix[3][2] - vpMatrix[0][2],
@@ -43,7 +43,7 @@ function calculateFrustumPlanes(viewMatrix, projectionMatrix) {
     normalizePlane(planes.right);
 
     // Bottom Plane
-    planes.bottom = { 
+    planes.bottom = {
         x: vpMatrix[3][0] + vpMatrix[1][0],
         y: vpMatrix[3][1] + vpMatrix[1][1],
         z: vpMatrix[3][2] + vpMatrix[1][2],
@@ -53,7 +53,7 @@ function calculateFrustumPlanes(viewMatrix, projectionMatrix) {
 
 
     // Top Plane
-    planes.top = { 
+    planes.top = {
         x: vpMatrix[3][0] - vpMatrix[0][0],
         y: vpMatrix[3][1] - vpMatrix[0][1],
         z: vpMatrix[3][2] - vpMatrix[0][2],
@@ -62,7 +62,7 @@ function calculateFrustumPlanes(viewMatrix, projectionMatrix) {
     normalizePlane(planes.top);
 
     // Near Plane
-    planes.near = { 
+    planes.near = {
         x: vpMatrix[3][0] + vpMatrix[2][0],
         y: vpMatrix[3][1] + vpMatrix[2][1],
         z: vpMatrix[3][2] + vpMatrix[2][2],
@@ -71,7 +71,7 @@ function calculateFrustumPlanes(viewMatrix, projectionMatrix) {
     normalizePlane(planes.near);
 
     // Far Plane
-    planes.far = { 
+    planes.far = {
         x: vpMatrix[3][0] - vpMatrix[2][0],
         y: vpMatrix[3][1] - vpMatrix[2][1],
         z: vpMatrix[3][2] - vpMatrix[2][2],
@@ -116,7 +116,7 @@ function delete_from_arr(array, index) {
     let node = array[index];
     array.splice(index, 1);
     return node
-    
+
 }
 function add_to_arr(array, node) {
     array.push(node);
@@ -156,7 +156,7 @@ class Player {
         else if (this.time > 15 && this.time <= 25) this.time = 20;
         else if (this.time > 25 && this.time <= 35) this.time = 30;
         else if (this.time > 35) this.time = 40;
-    
+
         // Adjust velocity based on direction
         if (dir == 0) {
             // Jump forward
@@ -164,14 +164,18 @@ class Player {
             move_dir = 0;
         } else if (dir == 1) {
             // Jump left
-            this.vel = this.vel.plus(vec3(0, Math.min(5, 2 * this.time / 15), -1 * Math.min(7, 1.15 * this.time / 15)));
+            this.vel = this.vel.plus(vec3(0, Math.min(5, 2 * this.time / 15), -1.0 * Math.min(7, 1.15 * this.time / 15)));
             move_dir = 1;
         } else if (dir == 2) {
             // Jump right - assuming similar mechanics but in the opposite direction of 'left'
             this.vel = this.vel.plus(vec3(0, Math.min(5, 2 * this.time / 15), Math.min(7, 1.15 * this.time / 15)));
             move_dir = 2;
+        }else//dir == 3
+        {
+            this.vel = this.vel.plus(vec3( -1.0 * Math.min(5, 1.15 * this.time / 15), Math.min(7, 2 * this.time / 15), 0));
+            move_dir = 3;
         }
-    
+
         // Debugging adjustments
         if (debug) {
             if (direction == 0) {
@@ -181,13 +185,13 @@ class Player {
                 this.vel = this.vel.plus(vec3(0, 2.5, direction == 1 ? -1.9 : 1.9));
             }
         }
-    
+
         this.time = 0;
         this.squish = 1;
         this.falling = true;
         this.ifStarted = true;
     }
-    
+
     // Updates position and velocity if currently falling
     update() {
         if (!this.falling) return;
@@ -207,15 +211,114 @@ class Player {
 
 class Bomb {
     constructor(pos) {
+        this.fall_speed = Math.random() * 0.9 + 0.70; // falling speed per second per unit distance 0.7 ~ 2
+        this.regenerate_speed = Math.random() * 5 + 2; // time delay in second to create a new bomb
         this.pos = pos;
-        this.shape = new Shape_From_File("../assets/objects/light.obj")
+        this.pos[1] = 3;
+        this.is_shown = true;
+        this.is_alive = 1;
+        this.regenerate_time = 0;
+        this.shape = new Shape_From_File("../assets/objects/light.obj");
         this.material = new Material(new defs.Phong_Shader(),
             {ambient: 1, diffusivity: .4, color: hex_color("#333333")}); // Darker color
+
+    }
+
+    update_pos(pos)
+    {
+        this.pos = pos;
+        pos[1] = 3;
+    }
+
+    start()
+    {
+        this.pos[1] = 3;
+        this.is_alive = 1;
+    }
+
+    is_ready()
+    {
+        return this.is_alive === 2;
     }
 
     draw(context, program_state) {
+
+        let t = program_state.animation_time / 1000, dt = program_state.animation_delta_time/1000;
+        if(this.is_alive === 0 )
+        {
+            this.regenerate_time -= dt;
+
+            if(this.regenerate_time <= 0)
+            {
+                this.is_alive = 2;
+            }
+
+            return;
+        }
+
+        if(this.is_alive === -1)
+        {
+            this.regenerate_time = Math.random() * this.regenerate_speed;
+            this.is_alive = 0;
+            return;
+
+        }
+
+        if(this.is_alive === 1)
+        {
+            this.is_shown = true;
+        }
+        else
+        {
+            return;
+        }
+
+        if(!this.is_shown)
+        {
+            return;
+        }
+
+        if(this.pos[1] >= 0)
+        {
+            this.pos[1] -= this.fall_speed * dt;
+        }
+        else
+        {
+            this.is_shown = false;
+            this.is_alive = -1
+            return;
+        }
+
+
         let bomb_transform =  Mat4.translation(0,10,0).times(Mat4.translation(...this.pos)).times(Mat4.rotation(Math.PI/2,1,0,0)).times(Mat4.scale(0.8,0.8,0.8));
         this.shape.draw(context, program_state, bomb_transform, this.material);
+
+    }
+}
+
+class Texture_Scroll_X extends defs.Phong_Shader {
+    // TODO:  Modify the shader below (right now it's just the same fragment shader as Textured_Phong) for requirement #6.
+    fragment_glsl_code() {
+        return this.shared_glsl_code() + `
+            varying vec2 f_tex_coord;
+            uniform sampler2D texture;
+            uniform float animation_time;
+
+            void main() {
+
+                float scroll_speed = 2.0;
+                vec2 offset_tex_coord = f_tex_coord - vec2(animation_time * scroll_speed, 0.0);
+               
+                vec4 tex_color = texture2D(texture, offset_tex_coord);
+                
+
+                if( tex_color.w < .01 ) discard;    
+                // Compute an initial (ambient) color:
+                gl_FragColor = vec4( ( tex_color.xyz + shape_color.xyz ) * ambient, shape_color.w * tex_color.w ); 
+                // Compute the final color with contributions from lights:
+                gl_FragColor.xyz += phong_model_lights( normalize( N ), vertex_worldspace );
+            }
+        `;
     }
 }
 // class ReferenceLine{
@@ -244,7 +347,7 @@ class Bomb {
 //     }
 
 //     draw(context, program_state,  t, color, shading, offset) {
-//         for (let i = 0; i < 8; i++) {    
+//         for (let i = 0; i < 8; i++) {
 //             this.shapes[i].draw();
 //         }
 //     }
@@ -303,16 +406,16 @@ class Tree {
         let texture_t = new Texture(selected_texture_path);
 
         // if (random > 0.5){
-        //     this.shape = new Shape_From_File("../assets/objects/platform/Bear.obj");          
+        //     this.shape = new Shape_From_File("../assets/objects/platform/Bear.obj");
         // }
         // else if (random > 0){
-        //     this.shape = new defs.Cube(30, 30);            
+        //     this.shape = new defs.Cube(30, 30);
         // }
         // else if (random > 0){
-        //     this.shape = new defs.Cube(30, 30);            
+        //     this.shape = new defs.Cube(30, 30);
         // }
         // else if (random > 0){
-        //     this.shape = new defs.Cube(30, 30);            
+        //     this.shape = new defs.Cube(30, 30);
         // }
         // this.shape = new defs.Capped_Cylinder(30, 30);
 
@@ -327,7 +430,7 @@ class Tree {
         // }
 
         this.platform = new Material(new defs.Textured_Phong(),
-        {ambient: 0.5, diffusivity: .8, specularity: 1, texture: texture_t});
+            {ambient: 0.5, diffusivity: .8, specularity: 1, texture: texture_t});
 
     }
 
@@ -338,7 +441,7 @@ class Tree {
         } else{
             tree_transform = Mat4.scale(this.radius,this.height,this.radius).times(Mat4.translation(0,0.5,0).times(Mat4.rotation(-Math.PI/2,1,0,0)));
         }
-        
+
         tree_transform.pre_multiply(Mat4.translation(...this.pos));
         //let tree_transform = Mat4.scale(this.radius,this.height,this.radius).times(Mat4.translation(0,0.5,0).times(Mat4.translation(...this.pos).times(Mat4.rotation(Math.PI/2,1,0,0))));
         this.shape.draw(context, program_state, tree_transform, this.platform);
@@ -528,12 +631,12 @@ class Floor{
             floor: new defs.Regular_2D_Polygon(20,20),
         };
         //   {ambient: 0, diffusivity: .8, specularity: 1, color: hex_color("#80FFFF")});
-    // 
+        //
         // Non bump mapped:
         this.floor = new Material(new defs.Textured_Phong(), {
-            texture:texture_t, color: hex_color("#8B4513"), 
+            texture:texture_t, color: hex_color("#8B4513"),
             ambient: 0.5, diffusivity: 0.8, specularity: 1,
-            });
+        });
     }
 
     draw(context, program_state, t, color, shading, offset) {
@@ -566,15 +669,15 @@ class SkyBox {
             ambient: 1, diffusivity: 0, specularity: 0
         });
     }
-    
+
     draw(context, program_state) {
         let translate = Mat4.translation(...this.center);
         let invtranslate = Mat4.translation(...this.center.map(x => -x));
         let transform = translate.times(
-                        Mat4.translation(0,-this.size,0).times(
-                        Mat4.rotation(Math.PI/2, 1, 0, 0).times(
-                        Mat4.scale(this.size, this.size, 1))));
-        
+            Mat4.translation(0,-this.size,0).times(
+                Mat4.rotation(Math.PI/2, 1, 0, 0).times(
+                    Mat4.scale(this.size, this.size, 1))));
+
         // 绘制底部时使用带有贴图的材质
         this.plate.draw(context, program_state, transform, this.bottom_material);
 
@@ -654,11 +757,12 @@ export class Game extends Scene {
         // Game initialization
         this.player = new Player(vec3(0,3,0));
         // this.trees = [new Tree(vec3(0,0,0),1,1), new Tree(vec3(5,0,0),1.5,1), new Tree(vec3(10,0,0),1.5,1), new Tree(vec3(15,0,0),1.5,1), new Tree(vec3(20,0,0),1,2)];
-        
-        this.bomb = new Bomb(vec3(0,3,0));
-        
-        this.trees = [new Tree(vec3(0,2,0),1,1), new Tree(vec3(this.lastX,2,0),1.5,1)];
+
+
+        this.trees = [new Tree(vec3(0,2,0),1,1), new Tree(vec3(this.lastX,2,0),1.5,1), new Tree(vec3(-this.lastX,2,0),1.5,1), new Tree(vec3(0,2,7),1.5,1), new Tree(vec3(0,2,-7),1.5,1)];
         this.tree_backgrounds = [];
+
+        this.bomb = [ new Bomb(vec3(this.lastX,2,0)), new Bomb(vec3(-this.lastX,2,0)), new Bomb(vec3(0,2,7)), new Bomb(vec3(0,2,-7))] ;
 
         this.plant_tree_background(this.lastX,this.trees[0].pos[0],this.trees[0].pos[2],0);
 
@@ -784,7 +888,7 @@ export class Game extends Scene {
                 start_color[2] * (1 - t) + end_color[2] * t,
                 1.0
             );
-    
+
             this.colors[i] = new_color;
         }
     }
@@ -797,18 +901,20 @@ export class Game extends Scene {
         let length1 = lengthOptions[Math.floor(Math.random() * lengthOptions.length)];
         let length2 = lengthOptions[Math.floor(Math.random() * lengthOptions.length)];
         let length3 = lengthOptions[Math.floor(Math.random() * lengthOptions.length)];
+        let length4 = lengthOptions[Math.floor(Math.random() * lengthOptions.length)];
         // Decide the new positions for the next trees based on the jump length.
         let forwardPos = vec3(this.player.pos[0] + length1, 0, this.player.pos[2]);
         let leftPos = vec3(this.player.pos[0], 0, this.player.pos[2] - length2);
         let rightPos = vec3(this.player.pos[0], 0, this.player.pos[2] + length3);
-    
+        let backPos = vec3(this.player.pos[0] - length4, 0, this.player.pos[2]);
         // Create new trees at the calculated positions.
         let newTrees = [
             new Tree(forwardPos, 1.5, 1), // Forward
             new Tree(leftPos, 1.5, 1),    // Left
-            new Tree(rightPos, 1.5, 1)    // Right
+            new Tree(rightPos, 1.5, 1),    // Right
+            new Tree(backPos, 1.5, 1)    // back
         ];
-    
+
         // Add the current tree that the player is on to the new trees list.
         for (let tree of this.trees) {
             if (tree.pos[0] === this.player.pos[0] && tree.pos[2] === this.player.pos[2]) {
@@ -816,14 +922,72 @@ export class Game extends Scene {
                 break;
             }
         }
-    
+
         // Replace the existing trees with the new set of trees.
         this.trees = newTrees;
-    
+
         // Update the background for each new tree.
         this.plant_tree_background(length, this.player.pos[0], this.player.pos[2], 0); // Forward
         this.plant_tree_background(length, this.player.pos[0], this.player.pos[2], 1); // Left
         this.plant_tree_background(length, this.player.pos[0], this.player.pos[2], 2); // Right
+    }
+
+    update_bomb(context, program_state)
+    {
+        if(this.gameOver)
+        {
+            return;
+        }
+
+
+        for (let i = 0; i < this.trees.length; i++) {
+
+            if(this.trees[i].pos[0] === this.player.pos[0] && this.trees[i].pos[2] === this.player.pos[2])
+            {
+                continue;
+            }
+
+            let is_found = -1;
+            for(let j = 0; j < this.bomb.length; j++)
+            {
+                if(this.trees[i].pos[0] === this.bomb[j].pos[0] && this.trees[i].pos[2] === this.bomb[j].pos[2])
+                {
+                    is_found = j;
+                    break;
+                }
+            }
+
+            if( is_found !== -1)
+            {
+                if(this.bomb[is_found].is_ready())
+                {
+                    this.bomb[is_found].start();
+                }
+            }else {
+
+                console.log('is_found', is_found, 'i', i, this.trees[i].pos)
+
+                let ready_index = -1;
+                for (let j = 0; j < this.bomb.length; j++) {
+                    if (this.bomb[j].is_ready()) {
+                        ready_index = j;
+                        break;
+                    }
+                }
+
+                if (ready_index === -1) {
+                    continue;
+                }
+
+
+                this.bomb[ready_index].update_pos(vec3(this.trees[i].pos[0], this.trees[i].pos[1], this.trees[i].pos[2]));
+                this.bomb[ready_index].start();
+            }
+        }
+
+
+
+        this.bomb.forEach((f)=>{f.draw(context, program_state)});
     }
 
     make_control_panel() {
@@ -831,19 +995,22 @@ export class Game extends Scene {
         this.key_triggered_button("Welcome to JumpGame. Your objective is to make you avatar jump to blocks", ["i"], () => {});
         // this.key_triggered_button("Jump(distance proportional to duration of key press", ["j"], () => {this.player.jump(false)},
         //     '#6E6460', () => this.player.jump(true));
-        
+
         // Add jump logic for W, A, S, D keys
         this.key_triggered_button("Jump Forward", ["7"], () => {this.player.jump(false,0)},
-        '#6E6460', () => this.player.jump(true,0));
+            '#6E6460', () => this.player.jump(true,0));
 
         this.key_triggered_button("Jump Left", ["8"], () => {this.player.jump(false,1)},
-        '#6E6460', () => this.player.jump(true,1));
+            '#6E6460', () => this.player.jump(true,1));
 
         this.key_triggered_button("Jump Right", ["9"], () => {this.player.jump(false,2)},
-        '#6E6460', () => this.player.jump(true,2));
-        
+            '#6E6460', () => this.player.jump(true,2));
+
+        this.key_triggered_button("Jump back", ["0"], () => {this.player.jump(false,2)},
+            '#6E6460', () => this.player.jump(true,3));
+
         this.key_triggered_button("Restart Game", ["q"], () => {
-            this.init_game(); 
+            this.init_game();
         });
     }
 
@@ -886,14 +1053,17 @@ export class Game extends Scene {
                 this.trees[i].draw(context, program_state, t, this.colors[i], shading, tree_pos);
             }
         }
-        this.bomb.draw(context, program_state);
+
+        this.update_bomb(context, program_state);
+
+
 
         // for (let i = 0; i < this.tree_backgrounds.length; i++){
         //     this.tree_backgrounds[i].draw(context, program_state, t, this.colors[i], shading, tree_pos);
         // }
         this.floor.draw(context, program_state, t, 0, shading, this.offset);
         this.skybox.draw(context, program_state);
-        
+
 
         if(this.gameOver) {
             this.player.draw(context, program_state);
@@ -969,7 +1139,7 @@ export class Game extends Scene {
     }
 }
 
-// Gouraud Shader 
+// Gouraud Shader
 class Gouraud_Shader extends Shader {
     // This is a Shader using Phong_Shader as template
 
@@ -1123,29 +1293,29 @@ class Gouraud_Shader extends Shader {
 }
 
 
-        // for (let i = 0; i < this.tree_backgrounds.length; i++){
-        //     if (isObjectWithinFrustum(this.tree_backgrounds[i], frustumPlanes)) {
-        //         this.tree_backgrounds[i].draw(context, program_state, t, this.colors[i], shading, tree_pos);
-        //     } else{
-        //         let class_of = this.tree_backgrounds[i].identify();
-        //         if(class_of == 0){
-        //             let node = delete_from_arr(this.tree_backgrounds,i);
-        //             add_to_arr(this.prepared_trees,node);
-        //         }
-        //         else if(class_of == 1){
-        //             let node = delete_from_arr(this.tree_backgrounds,i);
-        //             add_to_arr(this.prepared_trunks,node);
-        //         }
-        //         else if(class_of == 2){
-        //             let node = delete_from_arr(this.tree_backgrounds,i);
-        //             add_to_arr(this.prepared_stumps,node);
-        //         }
-        //         else if(class_of == 3){
-        //             let node = delete_from_arr(this.tree_backgrounds,i);
-        //             add_to_arr(this.prepared_leaves,node);
-        //         } else{
-        //             let node = delete_from_arr(this.tree_backgrounds,i);
-        //             add_to_arr(this.prepared_stones,node);
-        //         }
-        //     }
-        // }
+// for (let i = 0; i < this.tree_backgrounds.length; i++){
+//     if (isObjectWithinFrustum(this.tree_backgrounds[i], frustumPlanes)) {
+//         this.tree_backgrounds[i].draw(context, program_state, t, this.colors[i], shading, tree_pos);
+//     } else{
+//         let class_of = this.tree_backgrounds[i].identify();
+//         if(class_of == 0){
+//             let node = delete_from_arr(this.tree_backgrounds,i);
+//             add_to_arr(this.prepared_trees,node);
+//         }
+//         else if(class_of == 1){
+//             let node = delete_from_arr(this.tree_backgrounds,i);
+//             add_to_arr(this.prepared_trunks,node);
+//         }
+//         else if(class_of == 2){
+//             let node = delete_from_arr(this.tree_backgrounds,i);
+//             add_to_arr(this.prepared_stumps,node);
+//         }
+//         else if(class_of == 3){
+//             let node = delete_from_arr(this.tree_backgrounds,i);
+//             add_to_arr(this.prepared_leaves,node);
+//         } else{
+//             let node = delete_from_arr(this.tree_backgrounds,i);
+//             add_to_arr(this.prepared_stones,node);
+//         }
+//     }
+// }
