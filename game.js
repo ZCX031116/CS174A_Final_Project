@@ -1105,7 +1105,7 @@ export class Game extends Scene {
             let distance = this.player.pos.minus(this.bomb[i].pos).norm();
             if (this.bomb[i].pos[0] == this.player.pos[0] && this.bomb[i].pos[2] == this.player.pos[2]){console.log("index: " + i + ", distance: " + distance);}
             
-            if (distance < 3) {
+            if (distance < 3 && distance > 0.5) {
                 console.log("collided by bomb " + i);
                 return i;
             }
