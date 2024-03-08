@@ -1002,10 +1002,10 @@ export class Game extends Scene {
 
         for (let i = 0; i < this.trees.length; i++) {
 
-            // if(this.trees[i].pos[0] === this.player.pos[0] && this.trees[i].pos[2] === this.player.pos[2])
-            // {
-            //     continue;
-            // }
+            if(this.trees[i].pos[0] === this.player.pos[0] && this.trees[i].pos[2] === this.player.pos[2])
+            {
+                continue;
+            }
 
             let is_found = -1;
             for(let j = 0; j < this.bomb.length; j++)
