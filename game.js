@@ -215,47 +215,49 @@ class Player {
         // 确保有一个初始的模型变换矩阵
         if (!this.model_transform)
             this.model_transform = Mat4.identity();
-        
+
         this.flying = true;
         const camera_position = program_state.camera_inverse.times(vec4(0, 0, 0, 1)).to3();
         const direction_to_camera = camera_position.minus(this.pos).normalized();
-        
+
         // 假设玩家被炸飞时朝向天空，我们可以使用一个固定的旋转轴，例如Z轴或自定义轴
         const rotation_axis = vec3(0, 0, 1); // 这里使用Z轴作为示例，可以根据需要调整
-    
+
         // 动画函数更新玩家的位置和旋转
         const animate = () => {
             if (!this.flying || program_state.animation_time >= this.fly_end_time) {
                 this.flying = false;
                 return;
             }
-            
+
             this.pos = this.pos.plus(this.fly_velocity.times(TIMESTEP));
             // 以下两行新增旋转效果
             const angle_per_frame = this.fly_rotation_speed * TIMESTEP;
             this.model_transform = this.model_transform.times(Mat4.rotation(angle_per_frame, ...rotation_axis));
-    
+
             // 如果需要，更新draw方法中的模型变换以反映当前的model_transform
             requestAnimationFrame(animate);
         };
         animate();
     }
-       
+
 }
 
 class Bomb {
+
+    static max_bomb_cnt = 2;
+    static current_bomb_cnt = 0;
     constructor(pos) {
         this.fall_speed = Math.random() * 0.9 + 0.70; // falling speed per second per unit distance 0.7 ~ 2
         this.regenerate_speed = Math.random() * 5 + 2; // time delay in second to create a new bomb
         this.pos = pos;
         this.pos[1] = 10;
         this.is_shown = true;
-        this.is_alive = 1;
+        this.is_alive = 0;
         this.regenerate_time = 0;
         this.shape = new Shape_From_File("../assets/objects/light.obj");
         this.material = new Material(new defs.Phong_Shader(),
             {ambient: 1, diffusivity: .4, color: hex_color("#333333")}); // Darker color
-
     }
 
     update_pos(pos)
@@ -267,7 +269,7 @@ class Bomb {
     start()
     {
         this.pos[1] = 3;
-        this.is_alive = 1;
+        this.is_alive = 3;
     }
 
     is_ready()
@@ -298,14 +300,27 @@ class Bomb {
 
         }
 
+        if(this.is_alive === 3)
+        {
+            if(Bomb.current_bomb_cnt < Bomb.max_bomb_cnt)
+            {
+                Bomb.current_bomb_cnt++;
+                this.is_alive = 1;
+            }
+            else
+            {
+                return;
+            }
+        }
+
+        ////console.log(this.pos,this.is_alive,Bomb.current_bomb_cnt)
+
         if(this.is_alive === 1)
         {
             this.is_shown = true;
+            this.is_alive = 4;
         }
-        else
-        {
-            return;
-        }
+
 
         if(!this.is_shown)
         {
@@ -320,6 +335,7 @@ class Bomb {
         {
             this.is_shown = false;
             this.is_alive = -1
+            Bomb.current_bomb_cnt--;
             return;
         }
 
@@ -822,7 +838,8 @@ export class Game extends Scene {
         this.trees = [new Tree(vec3(0,2,0),1,1), new Tree(vec3(this.lastX,2,0),1.5,1), new Tree(vec3(-this.lastX,2,0),1.5,1), new Tree(vec3(0,2,7),1.5,1), new Tree(vec3(0,2,-7),1.5,1)];
         this.tree_backgrounds = [];
 
-        this.bomb = [ new Bomb(vec3(this.lastX,5,0)), new Bomb(vec3(-this.lastX,5,0)), new Bomb(vec3(0,5,7)), new Bomb(vec3(0,5,-7))] ;
+        this.bomb = [ new Bomb(vec3(this.lastX,5,0)), new Bomb(vec3(-this.lastX,5,0)), new Bomb(vec3(0,5,7)), new Bomb(vec3(0,5,-7)), new Bomb(vec3(0,2,0),1,1)] ;
+        ////this.bomb = [ new Bomb(vec3(this.lastX,5,0)), new Bomb(vec3(-this.lastX,5,0))] ;
 
         this.plant_tree_background(this.lastX,this.trees[0].pos[0],this.trees[0].pos[2],0);
 
@@ -996,6 +1013,7 @@ export class Game extends Scene {
     {
         if(this.gameOver)
         {
+            Bomb.current_bomb_cnt = 0;
             return;
         }
 
@@ -1004,7 +1022,7 @@ export class Game extends Scene {
 
             if(this.trees[i].pos[0] === this.player.pos[0] && this.trees[i].pos[2] === this.player.pos[2])
             {
-                continue;
+                //continue;
             }
 
             let is_found = -1;
@@ -1025,7 +1043,7 @@ export class Game extends Scene {
                 }
             }else {
 
-                //console.log('is_found', is_found, 'i', i, this.trees[i].pos)
+                console.log('is_found', is_found, 'i', i, this.trees[i].pos)
 
                 let ready_index = -1;
                 for (let j = 0; j < this.bomb.length; j++) {
@@ -1046,9 +1064,23 @@ export class Game extends Scene {
         }
 
 
+        let uniqueNumbers = [1, 2, 3, 4, 5];
+        let sequence = [];
 
-        this.bomb.forEach((f)=>{f.draw(context, program_state)});
-        
+        while (sequence.length < this.bomb.length) {
+            const randomIndex = Math.floor(Math.random() * uniqueNumbers.length);
+            const selectedNumber = uniqueNumbers.splice(randomIndex, 1)[0];
+            sequence.push(selectedNumber);
+        }
+
+        ////console.log((sequence))
+        for(let i = 0; i< sequence.length; i++)
+        {
+            this.bomb[sequence[i]-1].draw(context, program_state);
+        }
+
+        ////console.log(this.bomb)
+
     }
 
     make_control_panel() {
@@ -1101,10 +1133,10 @@ export class Game extends Scene {
     checkBombCollision(){
         for (let i = 0; i < this.bomb.length; i++)
         {
-            if (this.bomb[i].is_alive !== 1) continue; // skip this bomb if not alive
+            if (this.bomb[i].is_alive !== 4) continue; // skip this bomb if not alive
             let distance = this.player.pos.minus(this.bomb[i].pos).norm();
             if (this.bomb[i].pos[0] == this.player.pos[0] && this.bomb[i].pos[2] == this.player.pos[2]){console.log("index: " + i + ", distance: " + distance);}
-            
+
             if (distance < 3 && distance > 0.5) {
                 console.log("collided by bomb " + i);
                 return i;
