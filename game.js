@@ -167,11 +167,11 @@ class Player {
             move_dir = 0;
         } else if (dir == 1) {
             // Jump left
-            this.vel = this.vel.plus(vec3(0, Math.min(5, 2 * this.time / 15), -1.0 * Math.min(7, 1.15 * this.time / 15)));
+            this.vel = this.vel.plus(vec3(0, Math.min(7, 2 * this.time / 15), -1.0 * Math.min(7, 1.5 * this.time / 15)));
             move_dir = 1;
         } else if (dir == 2) {
             // Jump right - assuming similar mechanics but in the opposite direction of 'left'
-            this.vel = this.vel.plus(vec3(0, Math.min(5, 2 * this.time / 15), Math.min(7, 1.15 * this.time / 15)));
+            this.vel = this.vel.plus(vec3(0, Math.min(7, 2 * this.time / 15), Math.min(7, 1.5 * this.time / 15)));
             move_dir = 2;
         }else//dir == 3
         {
@@ -245,10 +245,10 @@ class Player {
 
 class Bomb {
     constructor(pos) {
-        this.fall_speed = Math.random() * 0.9 + 0.70; // falling speed per second per unit distance 0.7 ~ 2
+        this.fall_speed = Math.random() + 0.70; // falling speed per second per unit distance 0.7 ~ 2
         this.regenerate_speed = Math.random() * 5 + 2; // time delay in second to create a new bomb
         this.pos = pos;
-        this.pos[1] = 10;
+        this.height = pos[1]
         this.is_shown = true;
         this.is_alive = 1;
         this.regenerate_time = 0;
@@ -266,7 +266,7 @@ class Bomb {
 
     start()
     {
-        this.pos[1] = 3;
+        this.pos[1] = 5;
         this.is_alive = 1;
     }
 
@@ -277,7 +277,8 @@ class Bomb {
 
     draw(context, program_state) {
 
-        let t = program_state.animation_time / 1000, dt = program_state.animation_delta_time/1000;
+        let t = program_state.animation_time / 1000;
+        let dt = program_state.animation_delta_time/1000;
         if(this.is_alive === 0 )
         {
             this.regenerate_time -= dt;
@@ -324,7 +325,8 @@ class Bomb {
         }
 
 
-        let bomb_transform =  Mat4.translation(0,10,0).times(Mat4.translation(...this.pos)).times(Mat4.rotation(Math.PI/2,1,0,0)).times(Mat4.scale(0.8,0.8,0.8));
+        let bomb_transform =  Mat4.translation(0,this.height,0).times(Mat4.translation(...this.pos)).times(Mat4.rotation(Math.PI/2,1,0,0));
+        console.log(this.pos)
         this.shape.draw(context, program_state, bomb_transform, this.material);
 
     }
@@ -821,8 +823,81 @@ export class Game extends Scene {
 
         this.trees = [new Tree(vec3(0,2,0),1,1), new Tree(vec3(this.lastX,2,0),1.5,1), new Tree(vec3(-this.lastX,2,0),1.5,1), new Tree(vec3(0,2,7),1.5,1), new Tree(vec3(0,2,-7),1.5,1)];
         this.tree_backgrounds = [];
+        this.bomb = []
+        // this.bomb = [ new Bomb(vec3(this.lastX,8,0)), new Bomb(vec3(-this.lastX,8,0)), new Bomb(vec3(0,8,7)), new Bomb(vec3(0,8,-7))] ;
+        try {
+            let cnt1 = Math.random();
+            let cnt2 = Math.random();
+            let bomb1, bomb2;
+            console.log(cnt1)
 
-        this.bomb = [ new Bomb(vec3(this.lastX,5,0)), new Bomb(vec3(-this.lastX,5,0)), new Bomb(vec3(0,5,7)), new Bomb(vec3(0,5,-7))] ;
+            if (cnt1 < 0.25)
+            {
+                bomb1 = new Bomb(vec3(this.lastX,8,0));
+                if (cnt2 <0.33)
+                {
+                    bomb2 = new Bomb(vec3(-this.lastX,8,0));
+                }
+                else if (cnt2 >=0.33 && cnt2<=0.66)
+                {
+                    bomb2 = new Bomb(vec3(0,8,-7));
+                }
+                else
+                {
+                    bomb2 = new Bomb(vec3(0,8,7));
+                }
+            }
+            else if(cnt1>=0.25 && cnt1<0.5)
+            {
+                bomb1 = new Bomb(vec3(-this.lastX,8,0));
+                if (cnt2 <0.33)
+                {
+                    bomb2 = new Bomb(vec3(this.lastX,8,0));
+                }
+                else if (cnt2 >=0.33 && cnt2<=0.66)
+                {
+                    bomb2 = new Bomb(vec3(0,8,-7));
+                }
+                else
+                {
+                    bomb2 = new Bomb(vec3(0,8,7));
+                }
+            }
+            else if( cnt1 >=0.5 && cnt1<0.75){
+                bomb1 = new Bomb(vec3(0,8,7));
+                if (cnt2 <0.33)
+                {
+                    bomb2 = new Bomb(vec3(-this.lastX,8,0));
+                }
+                else if (cnt2 >=0.33 && cnt2<=0.66)
+                {
+                    bomb2 = new Bomb(vec3(this.lastX,8,0));
+                }
+                else
+                {
+                    bomb2 = new Bomb(vec3(0,8,-7));
+                }
+            }
+            else{
+                bomb1 = new Bomb(vec3(0,8,-7));
+                if (cnt2 <0.33)
+                {
+                    bomb2 = new Bomb(vec3(-this.lastX,8,0));
+                }
+                else if (cnt2 >=0.33 && cnt2<=0.66)
+                {
+                    bomb2 = new Bomb(vec3(this.lastX,8,0));
+                }
+                else
+                {
+                    bomb2 = new Bomb(vec3(0,8,7));
+                }
+            } 
+            this.bomb = [bomb1, bomb2]
+        } catch (error) {
+            console.error(error);
+            // 其他错误处理
+        }
 
         this.plant_tree_background(this.lastX,this.trees[0].pos[0],this.trees[0].pos[2],0);
 
@@ -1001,13 +1076,14 @@ export class Game extends Scene {
 
 
         for (let i = 0; i < this.trees.length; i++) {
-
-            if(this.trees[i].pos[0] === this.player.pos[0] && this.trees[i].pos[2] === this.player.pos[2])
-            {
-                continue;
-            }
+                
+            // if(this.trees[i].pos[0] === this.player.pos[0] && this.trees[i].pos[2] === this.player.pos[2])
+            // {
+            //     continue;
+            // }
 
             let is_found = -1;
+            console.log(this.trees.length)
             for(let j = 0; j < this.bomb.length; j++)
             {
                 if(this.trees[i].pos[0] === this.bomb[j].pos[0] && this.trees[i].pos[2] === this.bomb[j].pos[2])
@@ -1019,11 +1095,16 @@ export class Game extends Scene {
 
             if( is_found !== -1)
             {
-                if(this.bomb[is_found].is_ready())
+                let n = Math.random()
+                if(n>0.4)
                 {
-                    this.bomb[is_found].start();
-                }
-            }else {
+                    if(this.bomb[is_found].is_ready())
+                    {
+                        this.bomb[is_found].start();
+                    }
+                }   
+            }
+            else {
 
                 //console.log('is_found', is_found, 'i', i, this.trees[i].pos)
 
@@ -1105,7 +1186,7 @@ export class Game extends Scene {
             let distance = this.player.pos.minus(this.bomb[i].pos).norm();
             if (this.bomb[i].pos[0] == this.player.pos[0] && this.bomb[i].pos[2] == this.player.pos[2]){console.log("index: " + i + ", distance: " + distance);}
             
-            if (distance < 3 && distance > 0.5) {
+            if (distance < 0.1 && distance > 0.01) {
                 console.log("collided by bomb " + i);
                 return i;
             }
@@ -1198,7 +1279,7 @@ export class Game extends Scene {
             for (let tree of this.trees) {
                 //make game easier by not looking at center of mass of block but just the edges
                 if (move_dir == 0){
-                    if (tree.pos[0] - 1 <= this.player.pos[0] && tree.pos[0] + 1 >= this.player.pos[0]) {
+                    if (tree.pos[0] - 1.5 <= this.player.pos[0] && tree.pos[0] + 1.5 >= this.player.pos[0]) {
                         this.onBlock = true;
                         block_x = tree.pos[0]
                         block_y = tree.pos[1]
@@ -1206,7 +1287,7 @@ export class Game extends Scene {
                         tree_ref = tree;
                     }
                 }else{
-                    if (tree.pos[2] - 1 <= this.player.pos[2] && tree.pos[2] + 1 >= this.player.pos[2]) {
+                    if (tree.pos[2] - 1.5 <= this.player.pos[2] && tree.pos[2] + 1.5 >= this.player.pos[2]) {
                         this.onBlock = true;
                         block_x = tree.pos[0]
                         block_y = tree.pos[1]
@@ -1237,7 +1318,8 @@ export class Game extends Scene {
             this.player.fly(context, program_state);
             this.gameOver = true;
         }
-        //reset game if this happens
+        // reset game if this happens
+
         if(this.player.pos[1]<=0){
             this.gameOver=true;
 
