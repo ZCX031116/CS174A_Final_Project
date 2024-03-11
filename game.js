@@ -245,8 +245,8 @@ class Player {
 
 class Bomb {
     constructor(pos) {
-        this.fall_speed = Math.random() + 0.70; // falling speed per second per unit distance 0.7 ~ 2
-        this.regenerate_speed = Math.random() * 5 + 2; // time delay in second to create a new bomb
+        this.fall_speed = Math.random()*2 + 0.90; // falling speed per second per unit distance 0.7 ~ 2
+        this.regenerate_speed = Math.random() * 10 + 4; // time delay in second to create a new bomb
         this.pos = pos;
         this.height = pos[1]
         this.is_shown = true;
@@ -827,73 +827,28 @@ export class Game extends Scene {
         // this.bomb = [ new Bomb(vec3(this.lastX,8,0)), new Bomb(vec3(-this.lastX,8,0)), new Bomb(vec3(0,8,7)), new Bomb(vec3(0,8,-7))] ;
         try {
             let cnt1 = Math.random();
-            let cnt2 = Math.random();
-            let bomb1, bomb2;
+            let bomb1 = new Bomb(vec3(this.lastX,8,0));
+            let bomb2 = new Bomb(vec3(-this.lastX,8,0));
+            let bomb3 = new Bomb(vec3(0,8,-7));
+            let bomb4 = new Bomb(vec3(0,8,7));
+            let bombs = []
             console.log(cnt1)
-
+                
             if (cnt1 < 0.25)
             {
-                bomb1 = new Bomb(vec3(this.lastX,8,0));
-                if (cnt2 <0.33)
-                {
-                    bomb2 = new Bomb(vec3(-this.lastX,8,0));
-                }
-                else if (cnt2 >=0.33 && cnt2<=0.66)
-                {
-                    bomb2 = new Bomb(vec3(0,8,-7));
-                }
-                else
-                {
-                    bomb2 = new Bomb(vec3(0,8,7));
-                }
+                bombs = [bomb4, bomb2, bomb3]
             }
             else if(cnt1>=0.25 && cnt1<0.5)
             {
-                bomb1 = new Bomb(vec3(-this.lastX,8,0));
-                if (cnt2 <0.33)
-                {
-                    bomb2 = new Bomb(vec3(this.lastX,8,0));
-                }
-                else if (cnt2 >=0.33 && cnt2<=0.66)
-                {
-                    bomb2 = new Bomb(vec3(0,8,-7));
-                }
-                else
-                {
-                    bomb2 = new Bomb(vec3(0,8,7));
-                }
+                bombs = [bomb1, bomb2, bomb4]
             }
             else if( cnt1 >=0.5 && cnt1<0.75){
-                bomb1 = new Bomb(vec3(0,8,7));
-                if (cnt2 <0.33)
-                {
-                    bomb2 = new Bomb(vec3(-this.lastX,8,0));
-                }
-                else if (cnt2 >=0.33 && cnt2<=0.66)
-                {
-                    bomb2 = new Bomb(vec3(this.lastX,8,0));
-                }
-                else
-                {
-                    bomb2 = new Bomb(vec3(0,8,-7));
-                }
+                bombs = [bomb1, bomb2, bomb4]
             }
             else{
-                bomb1 = new Bomb(vec3(0,8,-7));
-                if (cnt2 <0.33)
-                {
-                    bomb2 = new Bomb(vec3(-this.lastX,8,0));
-                }
-                else if (cnt2 >=0.33 && cnt2<=0.66)
-                {
-                    bomb2 = new Bomb(vec3(this.lastX,8,0));
-                }
-                else
-                {
-                    bomb2 = new Bomb(vec3(0,8,7));
-                }
+                bombs = [bomb1, bomb2, bomb3]
             } 
-            this.bomb = [bomb1, bomb2]
+            this.bomb = bombs
         } catch (error) {
             console.error(error);
             // 其他错误处理
@@ -1096,7 +1051,7 @@ export class Game extends Scene {
             if( is_found !== -1)
             {
                 let n = Math.random()
-                if(n>0.4)
+                if(n>0.25)
                 {
                     if(this.bomb[is_found].is_ready())
                     {
