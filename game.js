@@ -827,28 +827,73 @@ export class Game extends Scene {
         // this.bomb = [ new Bomb(vec3(this.lastX,8,0)), new Bomb(vec3(-this.lastX,8,0)), new Bomb(vec3(0,8,7)), new Bomb(vec3(0,8,-7))] ;
         try {
             let cnt1 = Math.random();
-            let bomb1 = new Bomb(vec3(this.lastX,8,0));
-            let bomb2 = new Bomb(vec3(-this.lastX,8,0));
-            let bomb3 = new Bomb(vec3(0,8,-7));
-            let bomb4 = new Bomb(vec3(0,8,7));
-            let bombs = []
+            let cnt2 = Math.random();
+            let bomb1, bomb2;
             console.log(cnt1)
-                
+
             if (cnt1 < 0.25)
             {
-                bombs = [bomb4, bomb2, bomb3]
+                bomb1 = new Bomb(vec3(this.lastX,8,0));
+                if (cnt2 <0.33)
+                {
+                    bomb2 = new Bomb(vec3(-this.lastX,8,0));
+                }
+                else if (cnt2 >=0.33 && cnt2<=0.66)
+                {
+                    bomb2 = new Bomb(vec3(0,8,-7));
+                }
+                else
+                {
+                    bomb2 = new Bomb(vec3(0,8,7));
+                }
             }
             else if(cnt1>=0.25 && cnt1<0.5)
             {
-                bombs = [bomb1, bomb2, bomb4]
+                bomb1 = new Bomb(vec3(-this.lastX,8,0));
+                if (cnt2 <0.33)
+                {
+                    bomb2 = new Bomb(vec3(this.lastX,8,0));
+                }
+                else if (cnt2 >=0.33 && cnt2<=0.66)
+                {
+                    bomb2 = new Bomb(vec3(0,8,-7));
+                }
+                else
+                {
+                    bomb2 = new Bomb(vec3(0,8,7));
+                }
             }
             else if( cnt1 >=0.5 && cnt1<0.75){
-                bombs = [bomb1, bomb2, bomb4]
+                bomb1 = new Bomb(vec3(0,8,7));
+                if (cnt2 <0.33)
+                {
+                    bomb2 = new Bomb(vec3(-this.lastX,8,0));
+                }
+                else if (cnt2 >=0.33 && cnt2<=0.66)
+                {
+                    bomb2 = new Bomb(vec3(this.lastX,8,0));
+                }
+                else
+                {
+                    bomb2 = new Bomb(vec3(0,8,-7));
+                }
             }
             else{
-                bombs = [bomb1, bomb2, bomb3]
+                bomb1 = new Bomb(vec3(0,8,-7));
+                if (cnt2 <0.33)
+                {
+                    bomb2 = new Bomb(vec3(-this.lastX,8,0));
+                }
+                else if (cnt2 >=0.33 && cnt2<=0.66)
+                {
+                    bomb2 = new Bomb(vec3(this.lastX,8,0));
+                }
+                else
+                {
+                    bomb2 = new Bomb(vec3(0,8,7));
+                }
             } 
-            this.bomb = bombs
+            this.bomb = [bomb1, bomb2]
         } catch (error) {
             console.error(error);
             // 其他错误处理
@@ -1233,8 +1278,8 @@ export class Game extends Scene {
             let tree_ref = null;
             for (let tree of this.trees) {
                 //make game easier by not looking at center of mass of block but just the edges
-                if (move_dir == 0){
-                    if (tree.pos[0] - 1.5 <= this.player.pos[0] && tree.pos[0] + 1.5 >= this.player.pos[0]) {
+                if (move_dir == 0 || move_dir == 3){
+                    if (tree.pos[0] - 1 <= this.player.pos[0] && tree.pos[0] + 1 >= this.player.pos[0]) {
                         this.onBlock = true;
                         block_x = tree.pos[0]
                         block_y = tree.pos[1]
@@ -1242,7 +1287,7 @@ export class Game extends Scene {
                         tree_ref = tree;
                     }
                 }else{
-                    if (tree.pos[2] - 1.5 <= this.player.pos[2] && tree.pos[2] + 1.5 >= this.player.pos[2]) {
+                    if (tree.pos[2] - 1 <= this.player.pos[2] && tree.pos[2] + 1 >= this.player.pos[2]) {
                         this.onBlock = true;
                         block_x = tree.pos[0]
                         block_y = tree.pos[1]
