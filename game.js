@@ -245,8 +245,8 @@ class Player {
 
 class Bomb {
     constructor(pos) {
-        this.fall_speed = Math.random()*2 + 0.90; // falling speed per second per unit distance 0.7 ~ 2
-        this.regenerate_speed = Math.random() * 10 + 4; // time delay in second to create a new bomb
+        this.fall_speed = Math.random()*1.5 + 1; // falling speed per second per unit distance 0.7 ~ 2
+        this.regenerate_speed = Math.random() * 1.5 + 2.7 // time delay in second to create a new bomb
         this.pos = pos;
         this.height = pos[1]
         this.is_shown = true;
@@ -1075,39 +1075,39 @@ export class Game extends Scene {
         }
 
 
-        for (let i = 0; i < this.trees.length; i++) {
-                
-            // if(this.trees[i].pos[0] === this.player.pos[0] && this.trees[i].pos[2] === this.player.pos[2])
-            // {
-            //     continue;
-            // }
+        // 创建一个从 0 到 this.trees.length-1 的整数数组
+        const indices = Array.from({ length: this.trees.length }, (v, i) => i);
 
+        // 随机排序这个数组
+        // Fisher-Yates 洗牌算法
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]]; // 交换元素
+            }
+        }
+
+        shuffleArray(indices);
+        console.log(indices);
+        // 通过随机排序的索引数组遍历 this.trees
+        for (let index of indices) {
+            let tree = this.trees[index];
             let is_found = -1;
-            // console.log(this.trees.length)
-            for(let j = 0; j < this.bomb.length; j++)
-            {
-                if(this.trees[i].pos[0] === this.bomb[j].pos[0] && this.trees[i].pos[2] === this.bomb[j].pos[2])
-                {
+
+            for (let j = 0; j < this.bomb.length; j++) {
+                if (tree.pos[0] === this.bomb[j].pos[0] && tree.pos[2] === this.bomb[j].pos[2]) {
                     is_found = j;
                     break;
                 }
             }
 
-            if( is_found !== -1)
-            {
-                let n = Math.random()
-                if(n>0.25)
-                {
-                    if(this.bomb[is_found].is_ready())
-                    {
+            if (is_found != -1) {
+                    if (this.bomb[is_found].is_ready()) {
                         this.bomb[is_found].start();
                     }
-                }   
-            }
+            } 
+            
             else {
-
-                //console.log('is_found', is_found, 'i', i, this.trees[i].pos)
-
                 let ready_index = -1;
                 for (let j = 0; j < this.bomb.length; j++) {
                     if (this.bomb[j].is_ready()) {
@@ -1120,8 +1120,7 @@ export class Game extends Scene {
                     continue;
                 }
 
-
-                this.bomb[ready_index].update_pos(vec3(this.trees[i].pos[0], this.trees[i].pos[1], this.trees[i].pos[2]));
+                this.bomb[ready_index].update_pos(vec3(tree.pos[0], tree.pos[1], tree.pos[2]));
                 this.bomb[ready_index].start();
             }
         }
