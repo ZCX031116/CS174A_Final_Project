@@ -110,9 +110,9 @@ function dotProduct(a, b) {
     return a.x * b[0] + a.y * b[1] + a.z * b[2];
 }
 function delete_from_arr(array, index) {
-    console.log("hey!");
-    console.log(index);
-    console.log(array);
+    // console.log("hey!");
+    // console.log(index);
+    // console.log(array);
     let node = array[index];
     array.splice(index, 1);
     return node
@@ -326,7 +326,7 @@ class Bomb {
 
 
         let bomb_transform =  Mat4.translation(0,this.height,0).times(Mat4.translation(...this.pos)).times(Mat4.rotation(Math.PI/2,1,0,0));
-        console.log(this.pos)
+        // console.log(this.pos)
         this.shape.draw(context, program_state, bomb_transform, this.material);
 
     }
@@ -758,7 +758,7 @@ export class Game extends Scene {
     constructor() {
 
         super();
-
+        this.jumpCount = 0; // 跳跃计数
         this.materials = {
             test: new Material(new defs.Phong_Shader(),
                 {ambient: .4, diffusivity: .6, color: hex_color("#ffffff")}),
@@ -805,7 +805,7 @@ export class Game extends Scene {
         this.time=0;
         direction=0;
         // *** Materials
-
+        this.jumpCount = 0;
         this.gameOver=false;
 
         //true when you are on a block, hence stop movement
@@ -829,7 +829,7 @@ export class Game extends Scene {
             let cnt1 = Math.random();
             let cnt2 = Math.random();
             let bomb1, bomb2;
-            console.log(cnt1)
+            // console.log(cnt1)
 
             if (cnt1 < 0.25)
             {
@@ -1007,11 +1007,11 @@ export class Game extends Scene {
 
         // Generate start_color with a broader range
         const start_color = color(0.5 - Math.random() * 0.5, 0.5 - Math.random() * 0.5, 0.5 - Math.random() * 0.5, 1.0);
-        console.log(start_color);
+        // console.log(start_color);
 
         // Generate end_color with a broader range
         const end_color = color( 0.5 + Math.random() * 0.5, 0.5 + Math.random() * 0.5, 0.5 + Math.random() * 0.5, 1.0);
-        console.log(end_color);
+        // console.log(end_color);
 
         for (let i = 0; i < length; i++) {
             const t = i / (length - 1); // Calculate a ratio between 0 and 1
@@ -1083,7 +1083,7 @@ export class Game extends Scene {
             // }
 
             let is_found = -1;
-            console.log(this.trees.length)
+            // console.log(this.trees.length)
             for(let j = 0; j < this.bomb.length; j++)
             {
                 if(this.trees[i].pos[0] === this.bomb[j].pos[0] && this.trees[i].pos[2] === this.bomb[j].pos[2])
@@ -1137,6 +1137,11 @@ export class Game extends Scene {
         this.key_triggered_button("Welcome to JumpGame. Your objective is to make you avatar jump to blocks", ["i"], () => {});
         // this.key_triggered_button("Jump(distance proportional to duration of key press", ["j"], () => {this.player.jump(false)},
         //     '#6E6460', () => this.player.jump(true));
+        this.jumpCountDisplay = () => {
+            console.log("跳跃次数: " + this.jumpCount.toString()); // 根据实际情况更新游戏UI
+        };
+        // 首次调用以设置显示
+        this.jumpCountDisplay();
 
         // Add jump logic for W, A, S, D keys
         this.key_triggered_button("Jump Forward", ["7"], () => {this.player.jump(false,0)},
@@ -1154,6 +1159,12 @@ export class Game extends Scene {
         this.key_triggered_button("Restart Game", ["q"], () => {
             this.init_game();
         });
+    }
+    updateJumpCountDisplay() {
+        // 检查更新函数是否存在，并调用
+        if (this.jumpCountDisplay) {
+            this.jumpCountDisplay();
+        }
     }
 
     bombExplosion(number){
@@ -1249,10 +1260,11 @@ export class Game extends Scene {
 
 
         if(this.gameOver) {
+            // this.jumpCount = 0; // 游戏结束，重置跳跃计数
             this.player.draw(context, program_state);
             if(this.time==0){
                 //display gameover Message
-                this.key_triggered_button("GAME JOEVER(will restart in 5 seconds), ATTEMPTS:"+attempts, ["i"], () => {});
+                this.key_triggered_button("GAME OVER(will restart in 5 seconds), Jumps You Completed:" + this.jumpCount, ["i"], () => {});
 
                 this.time=t;
             }else{
@@ -1285,6 +1297,7 @@ export class Game extends Scene {
                         block_y = tree.pos[1]
                         block_z = tree.pos[2]
                         tree_ref = tree;
+
                     }
                 }else{
                     if (tree.pos[2] - 1 <= this.player.pos[2] && tree.pos[2] + 1 >= this.player.pos[2]) {
@@ -1297,6 +1310,9 @@ export class Game extends Scene {
                 }
             }
             if(this.onBlock==true) {
+                this.jumpCount = this.jumpCount+1;
+                console.log("count: ", this.jumpCount)
+                this.updateJumpCountDisplay(); // 每当 `this.jumpCount` 改变时更新显示
                 this.player.land(block_x, block_y, block_z, block_y + tree_ref.height);
                 this.update_tree();
                 this.skybox.update_center(this.player.pos.plus(vec3(0,20,0)));
